@@ -1,0 +1,11 @@
+[workspace]
+members = [
+    "./crates/security",
+    "./crates/bitwarden_service",
+    "./crates/nx_core_interface"
+]
+
+# defines members to be compiled automatically on build
+default-members = [
+    "./crates/nx_core_interface"
+]

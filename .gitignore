@@ -1,0 +1,12 @@
+# rust
+target
+**/*.rs.bk
+
+# python
+*.egg-info
+__pycache__
+
+# other
+.env
+.env*
+.token.json
