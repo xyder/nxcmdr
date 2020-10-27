@@ -1,0 +1,55 @@
+# vars
+@email = email
+@password = hashed_password
+@device_id = d244cea1-c0cc-49e4-a4df-345aee3944e9
+@tfa = 111111
+@auth_token = {{get_token.response.body.$['access_token']}}
+@refresh_token = {{get_token.response.body.$['refresh_token']}}
+
+### ----------------------------------------------------------------
+
+###
+# request a full sync, excluding the domains
+GET https://vault.bitwarden.com/api/sync?excludeDomains=true
+Content-Type: application/json
+Authorization: Bearer {{auth_token}}
+
+###
+GET https://vault.bitwarden.com/api/accounts/revision-date
+Authorization: Bearer {{auth_token}}
+
+###
+# request a single item
+GET https://vault.bitwarden.com/api/ciphers/767f5de9-b265-489f-b990-63df70d46b49
+Content-Type: application/json
+Authorization: Bearer {{auth_token}}
+
+###
+# retrieve the access token. must be run before running the others
+# @name get_token
+POST https://vault.bitwarden.com/identity/connect/token
+Content-Type: application/x-www-form-urlencoded
+
+grant_type=password
+&username={{email}}
+&password={{password}}
+&scope=api offline_access
+&client_id=web
+&deviceType=10
+&deviceIdentifier={{device_id}}
+&deviceName=firefox
+&twoFactorToken={{tfa}}
+&twoFactorProvider=0
+&twoFactorRemember=0
+
+###
+
+# refresh the access token. must be run before running the others
+# returns only: access_token, expires_in, token_type, refresh_token, scope
+# @name get_token
+POST https://vault.bitwarden.com/identity/connect/token
+Content-Type: application/x-www-form-urlencoded
+
+grant_type=refresh_token
+&client_id=web
+&refresh_token={{refresh_token}}

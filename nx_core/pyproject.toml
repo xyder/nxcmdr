@@ -2,7 +2,7 @@
 name = "nx_core"
 version = "0.1.0"
 description = ""
-authors = ["xyder <xydr2311@gmail.com>"]
+authors = ["xyder <xyder@dsider.org>"]
 
 [tool.poetry.dependencies]
 python = "^3.8"

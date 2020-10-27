@@ -1,29 +1,160 @@
+use std::env;
+
 use serde::{Deserialize, Serialize};
 
-#[allow(non_snake_case)]
+use security::models as sec_models;
+
+
+pub type BoxedResult<T> = std::result::Result<T, Box<dyn std::error::Error>>;
+
 #[derive(Deserialize, Debug)]
 pub struct PreLoginResponse {
-    pub Kdf: u32,
-    pub KdfIterations: u32,
+    #[serde(rename = "Kdf")]
+    pub kdf: Option<u32>,
+    #[serde(rename = "KdfIterations")]
+    pub iterations: Option<u32>,
     pub error: Option<String>,
 }
 
-#[allow(non_snake_case)]
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct BWErrorModel {
-    pub Message: Option<String>,
-    pub Object: Option<String>,
+    #[serde(rename = "Message")]
+    pub message: Option<String>,
+    #[serde(rename = "Object")]
+    pub object: Option<String>,
 }
 
-#[allow(non_snake_case)]
-#[derive(Serialize, Deserialize, Debug)]
+
+#[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct TokenResponse {
-    pub refresh_token: Option<String>, // used after `expires_in` seconds to get a new access token
     pub access_token: Option<String>, // jwt with at least the following keys: nbf, exp, iss, sub, email, name, premium
-    pub token_type: Option<String>,   // Bearer
-    pub last_saved: Option<String>,
     pub expires_in: Option<u32>, // in seconds
+    pub token_type: Option<String>,   // Bearer
+    pub refresh_token: Option<String>, // used after `expires_in` seconds to get a new access token
+    pub scope: Option<String>,
+    #[serde(rename = "PrivateKey")]
+    pub private_key: Option<String>,
+    #[serde(rename = "Key")]
+    pub key: Option<String>,
+    #[serde(rename = "ResetMasterPassword")]
+    pub reset_password: Option<bool>,
+    #[serde(rename = "Kdf")]
+    pub kdf: Option<u32>,
+    #[serde(rename = "KdfIterations")]
+    pub iterations: Option<u32>,
     pub error: Option<String>,
     pub error_description: Option<String>,
-    pub ErrorModel: Option<BWErrorModel>,
+    #[serde(rename = "ErrorModel")]
+    pub error_model: Option<BWErrorModel>,
+
+    // additional
+    pub last_saved: Option<String>,
+    pub master_key: Option<String>
+}
+
+#[derive(Serialize, Deserialize, Clone, Debug)]
+pub struct Profile {
+    #[serde(rename = "Email")]
+    pub email: String,
+    #[serde(rename = "Key")]
+    pub key: sec_models::CipherString
+}
+
+#[derive(Serialize, Deserialize, Clone, Debug)]
+pub struct CipherField {
+    #[serde(rename = "Name")]
+    pub name: sec_models::CipherString,
+    // todo: write what types exist
+    #[serde(rename = "Type")]
+    pub field_type: u8,
+    #[serde(rename = "Value")]
+    pub value: sec_models::CipherString
+}
+
+#[derive(Serialize, Deserialize, Clone, Debug)]
+pub struct Cipher {
+    #[serde(rename = "Id")]
+    pub id: uuid::Uuid,
+
+    #[serde(rename = "Name")]
+    pub name: sec_models::CipherString,
+
+    /**
+    Cipher types:
+        0 - ???
+        1 - Login
+        2 - Secure Note
+        3 - Card
+        4 - Identity
+    */
+    #[serde(rename = "Type")]
+    pub cipher_type: u8,
+
+    #[serde(rename = "Fields")]
+    pub fields: Option<Vec<CipherField>>,
+}
+
+
+#[derive(Serialize, Deserialize, Clone, Debug)]
+pub struct SyncResponse {
+    pub rev_date: Option<chrono::DateTime<chrono::Utc>>,
+    #[serde(rename = "Profile")]
+    pub profile: Profile,
+    #[serde(rename = "Ciphers")]
+    pub ciphers: Vec<Cipher>,
+    #[serde(rename = "Collections")]
+    pub collections: Vec<serde_json::Value>,
+    #[serde(rename = "Domains")]
+    pub domains: serde_json::Value,
+    #[serde(rename = "Folders")]
+    pub folders: Vec<serde_json::Value>,
+}
+
+#[derive(Serialize, Deserialize, Debug)]
+pub struct  IterationsRequest {
+    pub email: String
+}
+
+// todo: implement defaults for this
+#[derive(Serialize, Deserialize, Debug)]
+pub struct RefreshTokenRequest {
+    pub grant_type: String,
+    pub client_id: String, // todo: fetch this from config
+    pub refresh_token: String
+}
+
+// todo: implement defaults for this
+#[derive(Serialize, Deserialize, Debug)]
+pub struct TokenRequest {
+    pub grant_type: String,
+    pub username: String,
+    pub password: String,
+    pub scope: String,
+    pub client_id: String, // todo: fetch this from config
+    #[serde(rename = "deviceType")]
+    pub device_type: u8,
+    #[serde(rename = "deviceIdentifier")]
+    pub device_id: uuid::Uuid,  // todo: generate this into a config file
+    #[serde(rename = "deviceName")]
+    pub device_name: String,  // todo: fetch this from config
+    #[serde(rename = "twoFactorToken")]
+    pub two_factor_token: u32,
+    #[serde(rename = "twoFactorProvider")]
+    pub two_factor_provider: u8,
+    #[serde(rename = "twoFactorRemember")]
+    pub two_factor_remember: u8
+}
+
+#[derive(Debug)]
+pub struct Config {
+    pub config_dir: String
+}
+
+impl Config {
+    pub fn load() -> Self {
+        Self {
+            config_dir: env::var("NXCMDR_CONFIG_DIR")
+                .unwrap_or("~/.config/nxcmdr".into())
+        }
+    }
 }

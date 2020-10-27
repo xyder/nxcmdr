@@ -1,187 +1,60 @@
 use std::collections::HashMap;
-use std::io;
-// bring flush() into scope
-use std::io::Write;
-use std::fs::File;
 
-use serde_json::json;
+pub mod auth;
+pub mod models;
 
-mod models;
+mod service;
 mod constants;
+mod sync;
+mod utils;
+mod store;
 
-use security::build_password;
-use constants::*;
-
-use models::{PreLoginResponse, TokenResponse};
-
-
-fn get_prelogin_url() -> String {
-    format!("{base}/accounts/prelogin", base = BW_API_BASE)
-}
-
-fn get_token_url() -> String {
-    format!("{base}/connect/token", base = BW_IDENTITY_BASE)
-}
-
-async fn get_iterations(client: &reqwest::Client, email: &str) -> Result<u32, reqwest::Error> {
-    let mut payload = HashMap::new();
-    payload.insert("email", email);
-
-    let res = client
-        .post(&get_prelogin_url())
-        .json(&payload)
-        .send()
-        .await?;
-
-    let json_content = res.json::<PreLoginResponse>().await?;
-
-    match json_content.error.clone() {
-        Some(_) => panic!(format!("Error received: {:#?}", json_content)),  // todo: bubble error upstream
-        _ => ()
-    };
-
-    Ok(json_content.KdfIterations)
-}
-
-async fn get_new_token(
-    client: &reqwest::Client,
-    email: &str,
-    password: &str,
-    tfa_code: &str,
-) -> Result<TokenResponse, reqwest::Error> {
-    let iterations = get_iterations(&client, &email).await?;
-    let password = build_password(&email, &password, iterations);
+use security::models::{Decrypt, self as sec_models};
 
 
-    let payload = json!({
-        "grant_type": "password",
-        "username": email,
-        "password": password,
-        "scope": "api offline_access",
-        "client_id": "web",
-        "deviceType": 10,
-        "deviceIdentifier": "7d52408d-883d-4ed1-8dbb-fc6ff1a16c38",
-        "deviceName": "firefox",
-        "twoFactorToken": tfa_code,
-        "twoFactorProvider": 0,  // 1 for email, 0 for TOTP
-        "twoFactorRemember": 0  // set to 1 to remember two factor for this device
-    });
+pub async fn get_by_key(name: &str, token: &models::TokenResponse)
+        -> Result<HashMap<String, String>, reqwest::Error> {
 
-    let res = client
-        .post(&get_token_url())
-        .form(&payload)
-        .send()
-        .await?;
+    let key = token
+        .master_key.clone()
+        .expect("Key was not found on the token.");
 
-    let mut token_content = res.json::<TokenResponse>().await?;
+    let key = base64::decode(key)
+        .and_then(|k| Ok(sec_models::SymmetricKey::from(&sec_models::MasterKey { key: k, hash: "".to_string()})))
+        .expect("Key has an invalid format.");
 
-    token_content.last_saved = Some(chrono::offset::Local::now().to_string());
+    let data = sync::load_data(&token).await.unwrap();
+    let sym_key = sec_models::SymmetricKey::from(
+        data.profile.key.decrypt(&key));
 
-    match token_content.error.clone() {
-        Some(_) => panic!(format!("Error received: {:#?}", token_content)),  // todo: bubble error upstream
-        _ => ()
-    };
+    // filter for a secure note with the specified name
+    let mut found: Vec<&models::Cipher> = data
+        .ciphers
+        .iter()
+        .filter_map(
+            |c| if c.cipher_type == 2{
+                if c.name.decrypt_string(&sym_key)
+                        .unwrap()
+                        .to_lowercase()
+                        .contains(&name.to_lowercase()) {
+                    Some(c)
+                } else { None }
+            } else { None })
+        .collect();
 
-    println!("{:?}", token_content);
+    found.sort_by_cached_key(|c| c.name.decrypt_string(&sym_key).unwrap());
 
-    Ok(token_content)
-}
+    let mut env_vars: HashMap<String, String> = HashMap::new();
+    for cipher in found {
+        for field in cipher
+                .fields.as_ref()
+                .unwrap_or(&Vec::<models::CipherField>::new()) {
 
-async fn refresh_token(
-    client: &reqwest::Client,
-    refresh_token: &str,
-) -> Result<TokenResponse, reqwest::Error> {
-    let payload = json!({
-        "grant_type": "refresh_token",
-        "client_id": "web",
-        "refresh_token": refresh_token
-    });
-
-    let res = client.post(&get_token_url()).form(&payload).send().await?;
-
-    let mut token_content = res.json::<TokenResponse>().await?;
-
-    token_content.last_saved = Some(chrono::offset::Local::now().to_string());
-
-    match token_content.error.clone() {
-        Some(_) => panic!(format!("Error received: {:#?}", token_content)),  // todo: bubble error upstream
-        _ => ()
-    };
-
-    Ok(token_content)
-}
-
-fn read_tfa_code() -> String {
-    print!("Enter the 2FA code: ");
-    io::stdout().flush().unwrap();
-
-    let mut tfa_code = String::new();
-    io::stdin()
-        .read_line(&mut tfa_code)
-        .expect("Could not read 2FA code.");
-    tfa_code.retain(|c| !c.is_whitespace());
-
-    tfa_code
-}
-
-pub async fn get_token(
-    email: &str,
-    password: &str,
-) -> Result<TokenResponse, reqwest::Error> {
-    let client = reqwest::Client::new();
-    let path = TOKEN_FILE;
-
-    let token_content: TokenResponse = match File::open(path) {
-        Ok(file) => match serde_json::from_reader::<_, TokenResponse>(&file) {
-            Ok(content) => {
-                println!("Successfully read from file.");
-
-                let last_saved = content
-                    .last_saved
-                    .as_ref()
-                    .unwrap()
-                    .parse::<chrono::DateTime<chrono::offset::Local>>()
-                    .unwrap();
-
-                let duration = chrono::Duration::seconds(content.expires_in.unwrap().into());
-
-                match last_saved + duration > chrono::offset::Local::now() {
-                    true => content,
-
-                    // token expired. fetching a new one
-                    false => {
-                        println!("Token expired. Refreshing token ..");
-
-                        refresh_token(&client, &content.refresh_token.unwrap()).await?
-                    }
-                }
-            }
-
-            // could not read json
-            Err(_) => {
-                println!("Could not parse token json file. Re-fetching ..");
-                let tfa_code = read_tfa_code();
-                get_new_token(&client, email, password, &tfa_code).await?
-            }
-        },
-
-        // could not open file or file does not exist
-        Err(_) => {
-            println!("Could not read token json file. Re-fetching ..");
-            let tfa_code = read_tfa_code();
-            get_new_token(&client, email, password, &tfa_code).await?
+            env_vars.insert(
+                field.name.decrypt_string(&sym_key).unwrap(),
+                field.value.decrypt_string(&sym_key).unwrap());
         }
-    };
+    }
 
-    match token_content.error.clone() {
-        Some(_) => panic!(format!("Error received: {:#?}", token_content)),  // todo: bubble error upstream
-        _ => ()
-    };
-
-    serde_json::to_writer_pretty(
-        &File::create(TOKEN_FILE).expect("Could not create file"),
-        &token_content
-    ).expect("Could not save token.");
-
-    Ok(token_content)
+    Ok(env_vars)
 }
