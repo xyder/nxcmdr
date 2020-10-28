@@ -12,7 +12,7 @@ mod store;
 use security::models::{Decrypt, self as sec_models};
 
 
-pub async fn get_by_key(name: &str, token: &models::TokenResponse)
+pub async fn get_by_name(name: &str, token: &models::TokenResponse)
         -> Result<HashMap<String, String>, reqwest::Error> {
 
     let key = token

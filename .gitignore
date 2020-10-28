@@ -5,6 +5,7 @@ target
 # python
 *.egg-info
 __pycache__
+dist/
 
 # other
 .env

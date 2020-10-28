@@ -11,8 +11,5 @@ python = "^3.8"
 maturin = "^0.8.3"
 
 [build-system]
-# requires = ["poetry>=0.12"]
-# build-backend = "poetry.masonry.api"
-
-requires = ["maturin"]
-build-backend = "maturin"
+requires = ["poetry>=0.12"]
+build-backend = "poetry.masonry.api"
