@@ -1,6 +1,7 @@
 # nxcmdr
 
 CLI utility to run applications using an env file or env variables fetched from Bitwarden.
+([website](https://gitlab.com/xyder/nxcmdr))
 
 ## Installation
 ```bash
@@ -49,5 +50,6 @@ TBD
 > other than the application files itself. Use this application with that in mind and on a device that has additional
 > security.
 
-> The project is currently a mix of Python and Rust due to my limited experience with Rust process management.
-> I will convert this to full Rust when I've attained a greater proficiency in Rust. Stay tuned!
+> The project is currently a mix of Python and Rust since we haven't found or implemented a good way to run a sub-process
+> and have the stdin/stdout/stderr promoted to the parent process properly. Once that is found or implemented, the
+> project will be converted to full Rust.
