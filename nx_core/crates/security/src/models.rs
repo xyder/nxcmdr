@@ -1,5 +1,3 @@
-use std::fmt;
-
 use base64;
 use serde::{Serialize, Deserialize};
 use rand_core::{OsRng, RngCore};

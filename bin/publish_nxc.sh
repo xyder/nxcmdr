@@ -12,4 +12,3 @@
 # password = YOUR_TOKEN
 
 poetry run python -m twine upload --repository gitlab_nxcmdr ./nx_core/target/wheels/*
-poetry run python -m twine upload --repository gitlab_nxcmdr ./dist/*
