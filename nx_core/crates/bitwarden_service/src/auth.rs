@@ -31,7 +31,7 @@ fn need_refresh(token: &models::TokenResponse) -> bool {
 }
 
 pub async fn get_token() -> BoxedResult<models::TokenResponse> {
-    let config = Config::load();
+    let config = Config::load(false);
     let path = Path::new(&config.config_dir)
         .join(constants::TOKEN_FILENAME);
 
@@ -41,6 +41,7 @@ pub async fn get_token() -> BoxedResult<models::TokenResponse> {
 
     if data.is_none() {
         println!("Could not read file: {}", path.to_str().unwrap_or("<unknown>"));
+        Config::load(true);
         data = Some(get_new_token().await?);
 
         do_write = true;

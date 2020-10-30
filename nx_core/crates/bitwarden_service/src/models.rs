@@ -147,14 +147,32 @@ pub struct TokenRequest {
 
 #[derive(Debug)]
 pub struct Config {
-    pub config_dir: String
+    pub config_dir: String,
+    pub session_key: sec_models::SymmetricKey
 }
 
 impl Config {
-    pub fn load() -> Self {
+    pub fn load(reset_session: bool) -> Self {
         Self {
             config_dir: env::var("NXCMDR_CONFIG_DIR")
-                .unwrap_or("~/.config/nxcmdr".into())
+                .unwrap_or("~/.config/nxcmdr".into()),
+            session_key: {
+                let session_key = match reset_session {
+                    true => None,
+                    false => env::var("NXCMDR_SESSION_KEY").ok()
+                };
+                let was_none = session_key.is_none();
+                let session_key = sec_models::SymmetricKey::from(session_key);
+
+                if was_none {
+                    let session_key_str = session_key.to_string();
+                    println!("Run this command to skip login next time:\n\
+                        export NXCMDR_SESSION_KEY={}", session_key_str);
+                    env::set_var("NXCMDR_SESSION_KEY", session_key_str);
+                }
+
+                session_key
+            }
         }
     }
 }

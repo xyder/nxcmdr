@@ -25,7 +25,7 @@ pub async fn get_by_name(name: &str, token: &models::TokenResponse)
 
     let data = sync::load_data(&token).await.unwrap();
     let sym_key = sec_models::SymmetricKey::from(
-        data.profile.key.decrypt(&key));
+        data.profile.key.decrypt(&key).unwrap());
 
     // filter for a secure note with the specified name
     let mut found: Vec<&models::Cipher> = data

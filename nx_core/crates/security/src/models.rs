@@ -1,10 +1,12 @@
-use std::string::FromUtf8Error;
+use std::fmt;
 
 use base64;
 use serde::{Serialize, Deserialize};
+use rand_core::{OsRng, RngCore};
 
 use crate::crypt;
 
+pub type BoxedResult<T> = std::result::Result<T, Box<dyn std::error::Error>>;
 
 #[derive(Clone, Debug)]
 pub struct CipherString {
@@ -12,12 +14,12 @@ pub struct CipherString {
     pub mac: Vec<u8>,
     pub iv: Vec<u8>,
     pub data: Vec<u8>,
-    pub raw: String
+    pub raw: Option<String>
 }
 
 impl From<&str> for CipherString {
     fn from(cipher_string: &str) -> Self {
-        let raw = cipher_string.to_string();
+        let raw = Some(cipher_string.to_string());
         let mut parts = cipher_string.split('.');
         let enc_type = parts.next().unwrap_or("2");
         let enc_type = enc_type.parse::<i32>().unwrap_or(2);
@@ -31,10 +33,27 @@ impl From<&str> for CipherString {
     }
 }
 
+impl ToString for CipherString {
+    fn to_string(&self) -> String {
+        match self.raw.clone() {
+            Some(v) => v,
+            None => format!(
+                "{}.{}|{}|{}",
+                self.enc_type,
+                base64::encode(&self.iv),
+                base64::encode(&self.data),
+                base64::encode(&self.mac))
+        }
+    }
+}
+
 impl Serialize for CipherString {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
     where S: serde::Serializer {
-        serializer.serialize_str(&self.raw)
+        match self.raw.clone() {
+            Some(v) => serializer.serialize_some(&v),
+            None => serializer.serialize_none()
+        }
     }
 }
 
@@ -99,6 +118,41 @@ pub struct SymmetricKey {
     pub key: Vec<u8>
 }
 
+impl SymmetricKey {
+    pub fn encrypt(&self, data: &Vec<u8>) -> CipherString {
+        crypt::encrypt_cipher_string(self, data)
+    }
+}
+
+impl ToString for SymmetricKey {
+    fn to_string(&self) -> String {
+        let mut out = self.key.clone();
+        out.append(self.mac.clone().as_mut());
+        base64::encode(out)
+    }
+}
+
+impl From<String> for SymmetricKey {
+    fn from(input: String) -> Self {
+        Self::from(base64::decode(input).unwrap().to_vec())
+    }
+}
+
+impl From<Option<String>> for SymmetricKey {
+    fn from(input: Option<String>) -> Self {
+        match input {
+            Some(v) => Self::from(v),
+            None => {
+                let mut key = [0u8; 64];
+                OsRng.fill_bytes(&mut key);
+                let key = Vec::from(key);
+                Self::from(key)
+            }
+        }
+
+    }
+}
+
 impl From<Vec<u8>> for SymmetricKey {
     fn from(input: Vec<u8>) -> Self {
         let key = input[..32].to_vec();
@@ -117,29 +171,29 @@ impl From<&MasterKey> for SymmetricKey {
 }
 
 pub trait Decrypt<T> {
-    fn decrypt(&self, key: T) -> Vec<u8>;
+    fn decrypt(&self, key: T) -> BoxedResult<Vec<u8>>;
 
-    fn decrypt_string(&self, key: T) -> Result<String, FromUtf8Error> {
-        Ok(String::from_utf8(self.decrypt(key))?)
+    fn decrypt_string(&self, key: T) -> BoxedResult<String> {
+        Ok(String::from_utf8(self.decrypt(key)?)?)
     }
 }
 
 impl Decrypt<&MasterKey> for CipherString {
-    fn decrypt(&self, key: &MasterKey) -> Vec<u8> {
+    fn decrypt(&self, key: &MasterKey) -> BoxedResult<Vec<u8>> {
         crypt::decrypt_cipher_string(
             &SymmetricKey::from(key), self.clone())
     }
 }
 
 impl Decrypt<&SymmetricKey> for CipherString {
-    fn decrypt(&self, key: &SymmetricKey) -> Vec<u8> {
+    fn decrypt(&self, key: &SymmetricKey) -> BoxedResult<Vec<u8>> {
         crypt::decrypt_cipher_string(
             key, self.clone())
     }
 }
 
 impl Decrypt<&Vec<u8>> for CipherString {
-    fn decrypt(&self, key: &Vec<u8>) -> Vec<u8> {
+    fn decrypt(&self, key: &Vec<u8>) -> BoxedResult<Vec<u8>> {
         let key = SymmetricKey::from(key.clone());
 
         crypt::decrypt_cipher_string(

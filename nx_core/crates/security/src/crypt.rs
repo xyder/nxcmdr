@@ -1,8 +1,9 @@
 use std::iter::repeat;
 
-// todo: remove either ring or openssl
+// todo: remove either ring or openssl, and maybe rand_core
+use rand_core::{OsRng, RngCore};
 use ring::{pbkdf2, hmac};
-use openssl::symm::{decrypt, Cipher};
+use openssl::symm::{decrypt, encrypt, Cipher};
 
 use crate::models;
 
@@ -19,18 +20,25 @@ fn hkdf_expand(key: &[u8], info: &str) -> Vec<u8> {
     Vec::from(res.as_ref())
 }
 
-fn decrypt_aes(enc_key: &Vec<u8>, iv: Vec<u8>, data: Vec<u8>) -> Vec<u8> {
-    let plain = decrypt(
+fn decrypt_aes(enc_key: &Vec<u8>, iv: &Vec<u8>, data: &Vec<u8>) -> Vec<u8> {
+    decrypt(
         Cipher::aes_256_cbc(),
         enc_key,
-        Some(&iv),
-        &data)
-        .unwrap();
-
-    plain
+        Some(iv),
+        data)
+        .unwrap()
 }
 
-fn check_macs(mac_key: &[u8], cipher_string: models::CipherString) -> bool {
+fn encrypt_aes(enc_key: &Vec<u8>, iv: &Vec<u8>, data: &Vec<u8>) -> Vec<u8> {
+    encrypt(
+        Cipher::aes_256_cbc(),
+        enc_key,
+        Some(iv),
+        data
+    ).unwrap()
+}
+
+fn check_macs(mac_key: &[u8], cipher_string: &models::CipherString) -> bool {
     let s_key = hmac::Key::new(hmac::HMAC_SHA256, mac_key);
 
     let mut comp_data = cipher_string.iv.clone();
@@ -69,11 +77,36 @@ pub fn generate_pbkdf(password: &[u8], salt: &[u8], iterations: u32) -> Vec<u8> 
     output
 }
 
-pub fn decrypt_cipher_string(key: &models::SymmetricKey, cipher_string: models::CipherString) -> Vec<u8> {
+pub fn decrypt_cipher_string(
+        key: &models::SymmetricKey, cipher_string: models::CipherString)
+        -> models::BoxedResult<Vec<u8>> {
 
-    if !check_macs(&key.mac, cipher_string.clone()) {
-        panic!("Could not decrypt cipher string.")
+    if !check_macs(&key.mac, &cipher_string) {
+        return Err("Decrypt failed".into());
     };
 
-    decrypt_aes(&key.key, cipher_string.clone().iv, cipher_string.clone().data)
+    Ok(decrypt_aes(&key.key, &cipher_string.iv, &cipher_string.data))
+}
+
+pub fn encrypt_cipher_string(key: &models::SymmetricKey, data: &Vec<u8>) -> models::CipherString {
+    let s_key = hmac::Key::new(hmac::HMAC_SHA256, &key.mac);
+
+    let mut iv = [0u8; 16];
+    OsRng.fill_bytes(&mut iv);
+    let iv = Vec::from(iv);
+
+    let data = encrypt_aes(&key.key, &iv, data);
+    let mut mac_data = iv.clone();
+    mac_data.append(&mut data.clone());
+
+    let mac = hmac::sign(&s_key, &mac_data);
+    let mac = Vec::from(mac.as_ref());
+
+    models::CipherString {
+        enc_type: 2,
+        mac,
+        iv,
+        data,
+        raw: None
+    }
 }

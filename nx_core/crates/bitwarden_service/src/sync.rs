@@ -1,7 +1,6 @@
 use std::path::Path;
-use std::env;
 
-use crate::{models::{self, BoxedResult}, service, store};
+use crate::{constants, models::{self, BoxedResult}, service, store};
 
 
 async fn needs_sync(token: &models::TokenResponse, data: &models::SyncResponse) -> BoxedResult<bool> {
@@ -12,10 +11,9 @@ async fn needs_sync(token: &models::TokenResponse, data: &models::SyncResponse) 
 }
 
 pub async fn load_data(token: &models::TokenResponse) -> BoxedResult<models::SyncResponse> {
-    let path = Path::new(
-        &env::var("NXCMDR_CONFIG_DIR")
-        .unwrap_or("~/.config/nxcmdr".to_string())
-    ).join("data.json");
+    let config = models::Config::load(false);
+    let path = Path::new(&config.config_dir)
+        .join(constants::DATA_FILENAME);
 
     let initial = store::load_stored::<models::SyncResponse>(&path).ok();
     let mut data: models::SyncResponse;
@@ -24,6 +22,7 @@ pub async fn load_data(token: &models::TokenResponse) -> BoxedResult<models::Syn
         Some(v) => data = v,
         None => {
             data = service::get_full_sync(&token).await?.into();
+            store::store_data(&path, &data)?;
             return Ok(data);
         }
     }

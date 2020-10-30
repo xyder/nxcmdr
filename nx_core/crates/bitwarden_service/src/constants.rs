@@ -1,4 +1,5 @@
-pub const TOKEN_FILENAME: &str = "token.json";
+pub const TOKEN_FILENAME: &str = "data1.bin";
+pub const DATA_FILENAME: &str = "data2.bin";
 pub const BW_API_BASE: &str = "https://vault.bitwarden.com/api";
 pub const BW_IDENTITY_BASE: &str = "https://vault.bitwarden.com/identity";
 
