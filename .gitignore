@@ -2,11 +2,6 @@
 target
 **/*.rs.bk
 
-# python
-*.egg-info
-__pycache__
-dist/
-
 # other
 .env
 .env*
