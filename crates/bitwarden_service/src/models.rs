@@ -157,10 +157,13 @@ impl Config {
             config_dir: env::var("NXCMDR_CONFIG_DIR")
                 .unwrap_or("~/.config/nxcmdr".into()),
             session_key: {
-                let session_key = match reset_session {
+                let skip_session_gen = env::var("NXCMDR_SKIP_SESSION_GEN").is_ok();
+
+                let session_key = match reset_session && !skip_session_gen {
                     true => None,
                     false => env::var("NXCMDR_SESSION_KEY").ok()
                 };
+
                 let was_none = session_key.is_none();
                 let session_key = sec_models::SymmetricKey::from(session_key);
 
@@ -168,7 +171,10 @@ impl Config {
                     let session_key_str = session_key.to_string();
                     println!("Run this command to skip login next time:\n\
                         export NXCMDR_SESSION_KEY={}", session_key_str);
+
                     env::set_var("NXCMDR_SESSION_KEY", session_key_str);
+                    // using env vars as a global. I know, ugly.
+                    env::set_var("NXCMDR_SKIP_SESSION_GEN", "generated");
                 }
 
                 session_key
