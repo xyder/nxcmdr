@@ -7,4 +7,7 @@ services:
     container_name: nxcmdr-container
     volumes:
       - nxcmdr_data:/etc/nxcmdr
-    env_file: .env.docker
+    env_file: .docker.env
+
+volumes:
+  nxcmdr_data:

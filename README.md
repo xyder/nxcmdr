@@ -4,10 +4,25 @@ CLI utility to run applications using an env file or env variables fetched from 
 ([nxcmdr website](https://gitlab.com/xyder/nxcmdr))
 
 ## Installation and running
-For information on how to build this app, see Building section.
-The easiest way to run this app is with docker:
+### With docker
 ```
-TBD
+# create the environment variable for nxcmdr variables
+touch .docker.env
+
+# optionally you can add the Bitwarden user, password and token there. See the environment variables section.
+
+# build the image
+docker-compose build
+
+# run the command
+docker-compose run nxcmdr <args>
+```
+### With rust cargo
+Note that this requires rust and cargo to be installed
+```
+git clone https://gitlab.com/xyder/nxcmdr
+cd nxcmdr
+cargo install --path .
 ```
 ## Usage and examples
 
@@ -59,6 +74,11 @@ NXCMDR_CONFIG_DIR=/your/path/here
 # defines an automatically generated session key that will be used to decrypt the config files and cache.
 # the app will prompt you to save this after login.
 NXCMDR_SESSION_KEY=your_key_here
+
+# Bitwarden credentials
+NXCMDR_BW_USER=your_username
+NXCMDR_BW_PASS=your_password
+NXCMDR_BW_TFA=your_token
 ```
 
 ## Development
@@ -71,6 +91,7 @@ cargo run -- -h
 
 ## Building
 
+### Local
 ```
 git clone https://gitlab.com/xyder/nxcmdr
 cd nxcmdr
@@ -78,6 +99,14 @@ cargo build --release
 ./target/release/nxc -h
 ```
 
+### Docker
+
+```
+git clone https://gitlab.com/xyder/nxcmdr
+cd nxcmdr
+# note that this will currently build from the gitlab repo, not from local
+docker-compose build
+```
 ## Note
 > This project is a work in progress and not production ready yet. There may be bugs and vulnerabilities that may affect
 > the overall experience or compromise the security of your data. That being said, there is no risk of corrupting data
