@@ -3,6 +3,23 @@
 CLI utility to run applications using an env file or env variables fetched from Bitwarden.
 ([nxcmdr website](https://gitlab.com/xyder/nxcmdr))
 
+## Features
+
+### Implemented
+- [x] load environment variables from .env files
+- [x] load environment variables from Bitwarden secure notes
+- [x] run commands with environment variables
+- [x] encrypted session cache
+- [x] dockerized build/run
+
+### Planned
+- [ ] Cleanup, better error handling, better messages
+- [ ] Export collected environment variables in the current shell
+- [ ] Save the collected environment variables to a new .env file
+- [ ] Default to cached if Bitwarden server cannot be reached
+- [ ] Partial sync (if possible)
+- [ ] Command re-run on error or with filesystem watcher (if possible)
+
 ## Installation and running
 
 ### With docker
@@ -18,6 +35,8 @@ docker-compose build
 
 # run the command
 docker-compose run nxcmdr <args>
+
+# note: when prompted, you can save the session key in the .docker.env file
 ```
 
 ### With rust cargo
