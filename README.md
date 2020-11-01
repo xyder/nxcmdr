@@ -64,12 +64,12 @@ nxc -clb 'env.test_app.development' -f .env.test >test.env
 
 Export collected variables:
 ```
-export $(nxc -clb 'env.test_app.development' -f .env.test | grep -v '^#' | xargs -d '\n')
+export $(nxc -clb 'env.test_app.development' -f .env.test | xargs -d '\n')
 ```
 
 Unset collected variables:
 ```
-unset $(nxc -clb 'env.test_app.development' -f .env.test | grep -v '^#' | sed -E 's/(.*)=.*/\1/' | xargs)
+unset $(nxc -clb 'env.test_app.development' -f .env.test | sed -E 's/(.*)=.*/\1/' | xargs)
 ```
 
 Get help:
