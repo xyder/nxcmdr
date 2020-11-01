@@ -4,7 +4,9 @@ CLI utility to run applications using an env file or env variables fetched from 
 ([nxcmdr website](https://gitlab.com/xyder/nxcmdr))
 
 ## Installation and running
+
 ### With docker
+
 ```
 # create the environment variable for nxcmdr variables
 touch .docker.env
@@ -17,19 +19,21 @@ docker-compose build
 # run the command
 docker-compose run nxcmdr <args>
 ```
+
 ### With rust cargo
+
 Note that this requires rust and cargo to be installed
 ```
 git clone https://gitlab.com/xyder/nxcmdr
 cd nxcmdr
 cargo install --path .
 ```
+
 ## Usage and examples
 
 ```
-# running a python script using zsh, an .env file
-# and two secure notes called "env.test_app.development"
-# and "env.test_app.development - aux" I've created
+# running a python script using zsh, an .env file and two secure notes called "env.test_app.development" and
+# "env.test_app.development - aux" I've created
 
 nxc -cb 'env.test_app.development' -f .env.test -s $(which zsh) -- python ./main.py arg
 ```
@@ -37,7 +41,9 @@ nxc -cb 'env.test_app.development' -f .env.test -s $(which zsh) -- python ./main
 ```
 nxc -h
 ```
+
 Output of help:
+
 ```
 nxcmdr 0.2.0
 Xyder <xyder@dsider.org>
@@ -65,8 +71,11 @@ OPTIONS:
     -f, --file <file>                        Load env vars from an .env file [default: ./.env]
     -s, --shell <shell>                      The shell to run this command in [default: /bin/sh]
 ```
+
 ### nxc environment variables
+
 The app itself uses these environment variables:
+
 ```
 # defines where the app will store its' configuration files and cache. They are encrypted and will not be editable by hand.
 NXCMDR_CONFIG_DIR=/your/path/here
@@ -92,6 +101,7 @@ cargo run -- -h
 ## Building
 
 ### Local
+
 ```
 git clone https://gitlab.com/xyder/nxcmdr
 cd nxcmdr
@@ -107,6 +117,7 @@ cd nxcmdr
 # note that this will currently build from the gitlab repo, not from local
 docker-compose build
 ```
+
 ## Note
 > This project is a work in progress and not production ready yet. There may be bugs and vulnerabilities that may affect
 > the overall experience or compromise the security of your data. That being said, there is no risk of corrupting data
