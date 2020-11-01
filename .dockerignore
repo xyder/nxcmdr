@@ -1,0 +1,9 @@
+# rust
+target
+**/*.rs.bk
+
+# other
+.env
+.env*
+.token.json
+zlf_*
