@@ -1,0 +1,10 @@
+version: '3.8'
+
+services:
+  nxcmdr:
+    build: .
+    image: nxcmdr
+    container_name: nxcmdr-container
+    volumes:
+      - nxcmdr_data:/etc/nxcmdr
+    env_file: .env.docker

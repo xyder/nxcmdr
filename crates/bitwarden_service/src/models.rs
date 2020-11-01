@@ -145,17 +145,24 @@ pub struct TokenRequest {
     pub two_factor_remember: u8
 }
 
-#[derive(Debug)]
+#[derive(Clone, Debug)]
 pub struct Config {
     pub config_dir: String,
-    pub session_key: sec_models::SymmetricKey
+    pub session_key: sec_models::SymmetricKey,
+    pub bw_user: Option<String>,
+    pub bw_pass: Option<String>,
+    pub bw_tfa: Option<String>
 }
 
 impl Config {
     pub fn load(reset_session: bool) -> Self {
         Self {
-            config_dir: env::var("NXCMDR_CONFIG_DIR")
-                .unwrap_or("~/.config/nxcmdr".into()),
+            config_dir: {
+                let config_dir = env::var("NXCMDR_CONFIG_DIR")
+                .unwrap_or("/etc/nxcmdr".into());
+                std::fs::create_dir_all(config_dir.clone()).expect("Could not create config dir.");
+                config_dir
+            },
             session_key: {
                 let skip_session_gen = env::var("NXCMDR_SKIP_SESSION_GEN").is_ok();
 
@@ -178,7 +185,10 @@ impl Config {
                 }
 
                 session_key
-            }
+            },
+            bw_user: env::var("NXCMDR_BW_USER").ok(),
+            bw_pass: env::var("NXCMDR_BW_PASS").ok(),
+            bw_tfa: env::var("NXCMDR_BW_TFA").ok()
         }
     }
 }
