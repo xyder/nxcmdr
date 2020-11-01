@@ -1,55 +1,85 @@
 # nxcmdr
 
 CLI utility to run applications using an env file or env variables fetched from Bitwarden.
-([website](https://gitlab.com/xyder/nxcmdr))
+([nxcmdr website](https://gitlab.com/xyder/nxcmdr))
 
-## Installation
-```bash
-export NXCMDR_CONFIG_DIR=your/path/here
-pip install nxcmdr --extra-index-url https://gitlab.com/api/v4/projects/22063064/packages/pypi/simple
+## Installation and running
+For information on how to build this app, see Building section.
+The easiest way to run this app is with docker:
+```
+TBD
+```
+## Usage and examples
+
+```
+# running a python script using zsh, an .env file
+# and two secure notes called "env.test_app.development"
+# and "env.test_app.development - aux" I've created
+
+nxc -cb 'env.test_app.development' -f .env.test -s $(which zsh) -- python ./main.py arg
 ```
 
-## Usage
-
 ```
-nxc --help-all
+nxc -h
 ```
+Output of help:
 ```
-Executes a command with the selected environment variables
+nxcmdr 0.2.0
+Xyder <xyder@dsider.org>
+Execute a command with environment variables from .env files or Bitwarden secure notes
 
-Example:
-    nxc -c -b 'My App - Dev environment' -f .env.development -- ./run_my_app.sh
+USAGE:
+    nxc [FLAGS] [OPTIONS] [command]...
 
-Usage:
-    nxc [SWITCHES] args...
+ARGS:
+    <command>...
 
-Meta-switches:
-    -h, --help                    Prints this help message and quits
-    --help-all                    Prints help messages of all sub-commands and quits
-    -v, --version                 Prints the program's version and quits
+FLAGS:
+    -c, --cumulative    If this is present all env sources will be merged, first loading Bitwarden,
+                        then the .env file
+    -h, --help          Prints help information
+    -V, --version       Prints version information
 
-Switches:
-    -b, --bw-name VALUE:str       Load env vars from one or more Bitwarden secret notes. It will merge all fields of all secure notes that
-                                  have a name which contains the VALUE (case-insensitive comparison). The merging is performed by
-                                  overwriting the notes in alphabetical order of their names. Example: Having "MyApp.environment.a" and
-                                  "MyApp.environment.b", for a VALUE of "myapp.environment", the first set of fields will be overwritten by
-                                  the second.
-    -c, --cumulative              If this is present, as well as an env file and a Bitwarden name, both sources will be taken and merged,
-                                  with the Bitwarden secure note env vars (see `bw-name` for how multiple notes are merged) being
-                                  overwritten by the .env file env vars.
-    -f, --env-file VALUE:str      Load env vars from a .env file; the default is .env
+OPTIONS:
+    -b, --bitwarden-name <bitwarden-name>
+            Load env vars from one or more Bitwarden secure notes. If multiple notes containing the
+            same `bitwarden-name` are found, they will be merged in alphabetical order and identical
+            fields overwritten. (Example: Having two notes named "MyApp environment A" and "MyApp
+            environment B" will cause any identical fields to be taken from "MyApp environment B")
+
+    -f, --file <file>                        Load env vars from an .env file [default: ./.env]
+    -s, --shell <shell>                      The shell to run this command in [default: /bin/sh]
+```
+### nxc environment variables
+The app itself uses these environment variables:
+```
+# defines where the app will store its' configuration files and cache. They are encrypted and will not be editable by hand.
+NXCMDR_CONFIG_DIR=/your/path/here
+
+# defines an automatically generated session key that will be used to decrypt the config files and cache.
+# the app will prompt you to save this after login.
+NXCMDR_SESSION_KEY=your_key_here
 ```
 
 ## Development
 
-TBD
+```
+git clone https://gitlab.com/xyder/nxcmdr
+cd nxcmdr
+cargo run -- -h
+```
+
+## Building
+
+```
+git clone https://gitlab.com/xyder/nxcmdr
+cd nxcmdr
+cargo build --release
+./target/release/nxc -h
+```
 
 ## Note
 > This project is a work in progress and not production ready yet. There may be bugs and vulnerabilities that may affect
 > the overall experience or compromise the security of your data. That being said, there is no risk of corrupting data
 > other than the application files itself. Use this application with that in mind and on a device that has additional
 > security.
-
-> The project is currently a mix of Python and Rust since we haven't found or implemented a good way to run a sub-process
-> and have the stdin/stdout/stderr promoted to the parent process properly. Once that is found or implemented, the
-> project will be converted to full Rust.
