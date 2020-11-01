@@ -1,0 +1,33 @@
+[package]
+name = "nxcmdr"
+version = "0.2.0"
+authors = ["xyder <xyder@dsider.org>"]
+description = """
+nxcmdr is a command line utility to run commands using environment
+variables loaded from Bitwarden secure notes or .env files
+"""
+documentation = "https://gitlab.com/xyder/nxcmdr"
+homepage = "https://gitlab.com/xyder/nxcmdr"
+repository = "https://gitlab.com/xyder/nxcmdr"
+readme = "README.md"
+categories = ["command-line-utilities"]
+license = "GPLv3"
+autotests = false
+edition = "2018"
+
+[[bin]]
+bench = false
+path = "src/main.rs"
+name = "nxc"
+
+[dependencies]
+dotenv = "0.15.0"
+bitwarden_service = {version = "0.1.0", path = "crates/bitwarden_service"}
+
+[dependencies.clap]
+version = "3.0.0-beta.2"
+
+[dependencies.tokio]
+# needs to be 0.2+ for compatibility with reqwest
+version = "^0.2"
+features = ["macros"]
