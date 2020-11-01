@@ -10,7 +10,7 @@ CLI utility to run applications using an env file or env variables fetched from 
 - [x] load environment variables from Bitwarden secure notes
 - [x] run commands with environment variables
 - [x] encrypted session cache
-- [x] dockerized build/run
+- [x] docker build/run
 
 ### Planned
 - [ ] Cleanup, better error handling, better messages
@@ -50,6 +50,7 @@ cargo install --path .
 
 ## Usage and examples
 
+Run a command using collected variables:
 ```
 # running a python script using zsh, an .env file and two secure notes called "env.test_app.development" and
 # "env.test_app.development - aux" I've created
@@ -57,6 +58,22 @@ cargo install --path .
 nxc -cb 'env.test_app.development' -f .env.test -s $(which zsh) -- python ./main.py arg
 ```
 
+Write collected variables to an .env file:
+```
+nxc -clb 'env.test_app.development' -f .env.test >test.env
+```
+
+Export collected variables:
+```
+export $(nxc -clb 'env.test_app.development' -f .env.test | grep -v '^#' | xargs -d '\n')
+```
+
+Unset collected variables:
+```
+unset $(nxc -clb 'env.test_app.development' -f .env.test | grep -v '^#' | sed -E 's/(.*)=.*/\1/' | xargs)
+```
+
+Get help:
 ```
 nxc -h
 ```
@@ -64,7 +81,7 @@ nxc -h
 Output of help:
 
 ```
-nxcmdr 0.2.0
+nxcmdr 0.2.2
 Xyder <xyder@dsider.org>
 Execute a command with environment variables from .env files or Bitwarden secure notes
 
@@ -72,12 +89,16 @@ USAGE:
     nxc [FLAGS] [OPTIONS] [command]...
 
 ARGS:
-    <command>...
+    <command>...    the command to run
 
 FLAGS:
     -c, --cumulative    If this is present all env sources will be merged, first loading Bitwarden,
                         then the .env file
     -h, --help          Prints help information
+    -l, --list          If this is present, the environment variables will be printed to stdout and
+                        the command will not be executed
+    -q                  If this is present, no output will be printed (except for when printing
+                        environment variables, if needed)
     -V, --version       Prints version information
 
 OPTIONS:
@@ -91,7 +112,7 @@ OPTIONS:
     -s, --shell <shell>                      The shell to run this command in [default: /bin/sh]
 ```
 
-### nxc environment variables
+### nxcmdr environment variables
 
 The app itself uses these environment variables:
 

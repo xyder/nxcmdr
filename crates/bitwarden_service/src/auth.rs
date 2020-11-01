@@ -5,7 +5,7 @@ use security::models as sec_models;
 use crate::{constants, models::{self, BoxedResult, Config}, service, store, utils::read_stdin};
 
 
-async fn get_new_token(config: &Option<Config>) -> BoxedResult<models::TokenResponse> {
+async fn get_new_token(quiet: bool, config: &Option<Config>) -> BoxedResult<models::TokenResponse> {
     let email = config
         .clone()
         .and_then(|c| c.bw_user)
@@ -17,7 +17,9 @@ async fn get_new_token(config: &Option<Config>) -> BoxedResult<models::TokenResp
         .unwrap_or_else(|| rpassword::prompt_password_stdout("Bitwarden password: ").ok());
 
         if password.is_none() {
-            println!("Password was not provided.");
+            if !quiet {
+                println!("Password was not provided.");
+            }
             return Err("Password was not provided.".into());
         }
 
@@ -47,7 +49,7 @@ fn need_refresh(token: &models::TokenResponse) -> bool {
     last_saved + duration <= chrono::offset::Local::now()
 }
 
-pub async fn get_token() -> BoxedResult<models::TokenResponse> {
+pub async fn get_token(quiet: bool) -> BoxedResult<models::TokenResponse> {
     let config = Config::load(false);
     let path = Path::new(&config.config_dir)
         .join(constants::TOKEN_FILENAME);
@@ -57,9 +59,11 @@ pub async fn get_token() -> BoxedResult<models::TokenResponse> {
     let mut do_write = false;
 
     if data.is_none() {
-        println!("Could not read file: {}", path.to_str().unwrap_or("<unknown>"));
+        if !quiet {
+            println!("Could not read file: {}", path.to_str().unwrap_or("<unknown>"));
+        }
         Config::load(true);
-        data = Some(get_new_token(&Some(config)).await?);
+        data = Some(get_new_token(quiet, &Some(config)).await?);
 
         do_write = true;
     }
@@ -68,7 +72,9 @@ pub async fn get_token() -> BoxedResult<models::TokenResponse> {
 
     // if this was a new token, it won't be refreshed
     if need_refresh(&data) {
-        println!("Token expired. Refreshing token ..");
+        if !quiet {
+            println!("Token expired. Refreshing token ..");
+        }
         service::refresh_token(&mut data).await?;
 
         do_write = true;

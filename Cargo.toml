@@ -1,6 +1,6 @@
 [package]
 name = "nxcmdr"
-version = "0.2.0"
+version = "0.2.2"
 authors = ["xyder <xyder@dsider.org>"]
 description = """
 nxcmdr is a command line utility to run commands using environment
@@ -21,7 +21,7 @@ path = "src/main.rs"
 name = "nxc"
 
 [dependencies]
-dotenv = "0.15.0"
+dotenv-parser = "0.1.2"
 bitwarden_service = {version = "0.1.0", path = "crates/bitwarden_service"}
 
 [dependencies.clap]

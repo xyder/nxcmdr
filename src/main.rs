@@ -9,7 +9,7 @@ mod env;
 /// Execute a command with environment variables from .env files or
 /// Bitwarden secure notes
 #[derive(Clap)]
-#[clap(version = "0.2.0", author = "Xyder <xyder@dsider.org>")]
+#[clap(version = "0.2.2", author = "Xyder <xyder@dsider.org>")]
 struct Opts {
     /// Load env vars from an .env file
     #[clap(short, long, default_value = "./.env")]
@@ -19,6 +19,14 @@ struct Opts {
     /// then the .env file.
     #[clap(short, long)]
     cumulative: bool,
+
+    /// If this is present, no output will be printed (except for when printing environment variables, if needed)
+    #[clap(short)]
+    quiet: bool,
+
+    /// If this is present, the environment variables will be printed to stdout and the command will not be executed
+    #[clap(short, long)]
+    list: bool,
 
     /// Load env vars from one or more Bitwarden secure notes. If multiple notes
     /// containing the same `bitwarden-name` are found, they will be merged in
@@ -32,22 +40,27 @@ struct Opts {
     /// The shell to run this command in.
     #[clap(short, long, default_value = "/bin/sh")]
     shell: String,
-    command: Vec<String>
+
+    /// the command to run
+    command: Vec<String>,
 }
 
 #[tokio::main]
 async fn main() -> models::BoxedResult<()> {
     let opts = Opts::parse();
+    let quiet = opts.quiet || opts.list;
 
-    if opts.command.len() == 0 {
-        println!("Error: No command supplied.");
+    if !opts.list && opts.command.len() == 0 {
+        if !quiet {
+            println!("Error: No command supplied.");
+        }
         std::process::exit(2);
 
     }
 
     let bw_envs = match opts.bitwarden_name {
         Some(v) => {
-            let token = get_token().await.unwrap();
+            let token = get_token(quiet).await.unwrap();
             get_by_name(&v, &token).await.unwrap()
         },
         None => HashMap::new()
@@ -55,17 +68,24 @@ async fn main() -> models::BoxedResult<()> {
     let file_envs = env::get_env_vars(&opts.file);
 
     if file_envs.is_err() {
-        println!("No env file found.")
+        if !quiet {
+            println!("No env file found.")
+        }
     }
 
     if bw_envs.len() == 0 {
-        println!("No BW envs loaded.")
+        if !quiet {
+            println!("No BW envs loaded.")
+        }
     }
 
     let file_envs = file_envs.unwrap_or(HashMap::new());
 
     let envs = if opts.cumulative {
-        bw_envs.into_iter().chain(file_envs).collect()
+        let mut res: HashMap<String, String> = HashMap::new();
+        res.extend(bw_envs);
+        res.extend(file_envs);
+        res
     } else {
         if bw_envs.len() != 0 {
             bw_envs
@@ -73,6 +93,14 @@ async fn main() -> models::BoxedResult<()> {
             file_envs
         }
     };
+
+    if opts.list {
+        for (env_key, env_val) in envs {
+            println!("{}='{}'", env_key, env_val);
+        }
+
+        return Ok(());
+    }
 
     let output = Command::new(opts.shell)
         .arg("-c")
@@ -84,7 +112,9 @@ async fn main() -> models::BoxedResult<()> {
 
     if output.is_err() {
         let e = output.unwrap_err();
-        println!("{:?} error: {}", e.kind(), e);
+        if !quiet {
+            println!("{:?} error: {}", e.kind(), e);
+        }
         std::process::exit(1);
     }
     Ok(())
