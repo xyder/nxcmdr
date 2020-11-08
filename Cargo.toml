@@ -22,12 +22,7 @@ name = "nxc"
 
 [dependencies]
 dotenv-parser = "0.1.2"
-bitwarden_service = {version = "0.1.0", path = "crates/bitwarden_service"}
+bitwarden_service = {version = "0.1.1", path = "crates/bitwarden_service"}
 
 [dependencies.clap]
 version = "3.0.0-beta.2"
-
-[dependencies.tokio]
-# needs to be 0.2+ for compatibility with reqwest
-version = "^0.2"
-features = ["macros"]

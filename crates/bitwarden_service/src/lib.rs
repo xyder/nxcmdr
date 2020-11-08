@@ -12,7 +12,7 @@ mod store;
 use security::models::{Decrypt, self as sec_models};
 
 
-pub async fn get_by_name(name: &str, token: &models::TokenResponse)
+pub fn get_by_name(name: &str, token: &models::TokenResponse)
         -> Result<HashMap<String, String>, reqwest::Error> {
 
     let key = token
@@ -23,7 +23,7 @@ pub async fn get_by_name(name: &str, token: &models::TokenResponse)
         .and_then(|k| Ok(sec_models::SymmetricKey::from(&sec_models::MasterKey { key: k, hash: "".to_string()})))
         .expect("Key has an invalid format.");
 
-    let data = sync::load_data(&token).await.unwrap();
+    let data = sync::load_data(&token).unwrap();
     let sym_key = sec_models::SymmetricKey::from(
         data.profile.key.decrypt(&key).unwrap());
 

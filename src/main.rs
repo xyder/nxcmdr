@@ -45,8 +45,7 @@ struct Opts {
     command: Vec<String>,
 }
 
-#[tokio::main]
-async fn main() -> models::BoxedResult<()> {
+fn main() -> models::BoxedResult<()> {
     let opts = Opts::parse();
     let quiet = opts.quiet || opts.list;
 
@@ -60,8 +59,8 @@ async fn main() -> models::BoxedResult<()> {
 
     let bw_envs = match opts.bitwarden_name {
         Some(v) => {
-            let token = get_token(quiet).await.unwrap();
-            get_by_name(&v, &token).await.unwrap()
+            let token = get_token(quiet).unwrap();
+            get_by_name(&v, &token).unwrap()
         },
         None => HashMap::new()
     };
