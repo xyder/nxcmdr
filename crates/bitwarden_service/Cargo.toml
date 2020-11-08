@@ -13,4 +13,4 @@ uuid = {version = "0.8.1", features = ["serde", "v4"]}
 rpassword = "5.0"
 base64 = "0.13.0"
 
-security = {version = "0.1.0", path = "../security"}
+security = {version = "0.1.1", path = "../security"}

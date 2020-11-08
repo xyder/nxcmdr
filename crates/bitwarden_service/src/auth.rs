@@ -13,17 +13,15 @@ async fn get_new_token(quiet: bool, config: &Option<Config>) -> BoxedResult<mode
 
         let password = config
         .clone()
-        .and_then(|c| Some(c.bw_pass))
-        .unwrap_or_else(|| rpassword::prompt_password_stdout("Bitwarden password: ").ok());
+        .and_then(|c| c.bw_pass)
+        .unwrap_or_else(|| rpassword::prompt_password_stdout("Bitwarden password: ").unwrap_or("".to_string()));
 
-        if password.is_none() {
+        if password == "" {
             if !quiet {
                 println!("Password was not provided.");
             }
             return Err("Password was not provided.".into());
         }
-
-        let password = password.unwrap();
 
         let tfa_code = config
         .clone()
