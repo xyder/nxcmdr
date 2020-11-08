@@ -80,7 +80,7 @@ nxc -h
 Output of help:
 
 ```
-nxcmdr 0.2.2
+nxcmdr 0.2.3
 Xyder <xyder@dsider.org>
 Execute a command with environment variables from .env files or Bitwarden secure notes
 

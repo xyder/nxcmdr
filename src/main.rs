@@ -9,7 +9,7 @@ mod env;
 /// Execute a command with environment variables from .env files or
 /// Bitwarden secure notes
 #[derive(Clap)]
-#[clap(version = "0.2.2", author = "Xyder <xyder@dsider.org>")]
+#[clap(version = "0.2.3", author = "Xyder <xyder@dsider.org>")]
 struct Opts {
     /// Load env vars from an .env file
     #[clap(short, long, default_value = "./.env")]

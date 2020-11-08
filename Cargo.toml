@@ -1,6 +1,6 @@
 [package]
 name = "nxcmdr"
-version = "0.2.2"
+version = "0.2.3"
 authors = ["xyder <xyder@dsider.org>"]
 description = """
 nxcmdr is a command line utility to run commands using environment

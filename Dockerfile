@@ -1,7 +1,7 @@
 FROM rust:1.47 as builder
 WORKDIR /usr/src/nxcmdr
 
-RUN git clone --depth 1 --branch 0.2.2 https://gitlab.com/xyder/nxcmdr.git . && \
+RUN git clone --depth 1 --branch 0.2.3 https://gitlab.com/xyder/nxcmdr.git . && \
     cargo install --path .
 
 FROM debian:buster-slim
