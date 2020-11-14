@@ -21,6 +21,21 @@ CLI utility to run applications using an env file or env variables fetched from 
 
 ## Installation and running
 
+### Using the binaries
+Downloads page: [Project Packages](https://gitlab.com/xyder/nxcmdr/-/packages).
+
+Example for v0.2.3:
+```
+# download the archive for your OS
+curl https://gitlab.com/xyder/nxcmdr/-/package_files/4638919/download --output nxc-0.2.3-x86_64-unknown-linux-gnu.tar.gz
+
+# unpack it
+tar -xf ./nxc-0.2.3-x86_64-unknown-linux-gnu.tar.gz
+
+# run the executable
+./nxc -h
+```
+
 ### With docker
 
 ```

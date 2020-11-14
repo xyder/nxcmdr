@@ -1,0 +1,3 @@
+FROM wearejh/rust-macos-build
+
+COPY . /build
