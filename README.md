@@ -21,6 +21,15 @@ CLI utility to run applications using an env file or env variables fetched from 
 
 ## Installation and running
 
+### Using the installer script
+```
+# for linux
+curl https://gitlab.com/xyder/nxcmdr/-/raw/master/bin/installer_linux.sh | bash
+
+# for mac
+curl https://gitlab.com/xyder/nxcmdr/-/raw/master/bin/installer_apple.sh | bash
+```
+
 ### Using the binaries
 Downloads page: [Project Packages](https://gitlab.com/xyder/nxcmdr/-/packages).
 
@@ -80,6 +89,11 @@ nxc -clb 'env.test_app.development' -f .env.test >test.env
 Export collected variables:
 ```
 export $(nxc -clb 'env.test_app.development' -f .env.test | xargs -d '\n')
+
+# or, to avoid tokenization problems with the single quotes
+set -a
+source <(nxc -clb 'env.test_app.development' -f .env.test)
+set +a
 ```
 
 Unset collected variables:
