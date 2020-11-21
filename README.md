@@ -145,7 +145,7 @@ OPTIONS:
 The app itself uses these environment variables:
 
 ```
-# defines where the app will store its' configuration files and cache. They are encrypted and will not be editable by hand.
+# defines where the app will store its' configuration files and cache. They are encrypted and will not be editable by hand. Default: $HOME/.config/nxcmdr
 NXCMDR_CONFIG_DIR=/your/path/here
 
 # defines an automatically generated session key that will be used to decrypt the config files and cache.

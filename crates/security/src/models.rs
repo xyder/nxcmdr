@@ -2,9 +2,9 @@ use base64;
 use serde::{Serialize, Deserialize};
 use rand_core::{OsRng, RngCore};
 
-use crate::crypt;
+use anyhow::{Context, Result};
 
-pub type BoxedResult<T> = std::result::Result<T, Box<dyn std::error::Error>>;
+use crate::crypt;
 
 #[derive(Clone, Debug)]
 pub struct CipherString {
@@ -15,26 +15,66 @@ pub struct CipherString {
     pub raw: Option<String>
 }
 
-impl From<&str> for CipherString {
-    fn from(cipher_string: &str) -> Self {
-        let raw = Some(cipher_string.to_string());
+// need this to implement own traits
+pub struct StringWrapper(String);
+
+impl From<StringWrapper> for String {
+    fn from(input: StringWrapper) -> Self {
+        input.0
+    }
+}
+
+impl From<&StringWrapper> for String {
+    fn from(input: &StringWrapper) -> Self {
+        input.0.clone()
+    }
+}
+
+impl From<&str> for StringWrapper {
+    fn from(input: &str) -> Self {
+        Self(input.to_string())
+    }
+}
+
+impl From<&StringWrapper> for Result<CipherString> {
+    fn from(cipher_string: &StringWrapper) -> Self {
+        let cipher_string: String = cipher_string.into();
+        let raw = Some(cipher_string.clone());
+
         let mut parts = cipher_string.split('.');
         let enc_type = parts.next().unwrap_or("2");
         let enc_type = enc_type.parse::<i32>().unwrap_or(2);
 
-        parts = parts.next().unwrap().split('|');
-        let iv = base64::decode(parts.next().unwrap()).unwrap();
-        let data = base64::decode(parts.next().unwrap()).unwrap();
-        let mac = base64::decode(parts.next().unwrap()).unwrap();
+        parts = parts.next()
+            .context("Missing composite data part on CipherString")?
+            .split('|');
 
-        Self { enc_type, iv, data, mac, raw }
+        let iv = base64::decode(parts
+                .next()
+                .context("Missing iv part on CipherString")?
+            )
+            .context("Could not decode iv on CipherString")?;
+
+        let data = base64::decode(parts
+                .next()
+                .context("Missing data part on CipherString")?
+            )
+            .context("Could not decode data on CipherString")?;
+
+        let mac = base64::decode(parts
+                .next()
+                .context("Missing mac part on CipherString")?
+            )
+            .context("Could not decode mac on CipherString")?;
+
+        Ok(CipherString { enc_type, iv, data, mac, raw })
     }
 }
 
 impl ToString for CipherString {
     fn to_string(&self) -> String {
-        match self.raw.clone() {
-            Some(v) => v,
+        match &self.raw {
+            Some(v) => v.clone(),
             None => format!(
                 "{}.{}|{}|{}",
                 self.enc_type,
@@ -48,8 +88,8 @@ impl ToString for CipherString {
 impl Serialize for CipherString {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
     where S: serde::Serializer {
-        match self.raw.clone() {
-            Some(v) => serializer.serialize_some(&v),
+        match &self.raw {
+            Some(v) => serializer.serialize_some(v),
             None => serializer.serialize_none()
         }
     }
@@ -62,7 +102,13 @@ impl<'de> serde::de::Visitor<'de> for CipherStringVisitor {
 
     fn visit_str<E>(self, v: &str) -> Result<Self::Value, E>
     where E: serde::de::Error {
-        Ok(CipherString::from(v))
+        let v_wrapper = StringWrapper::from(v);
+        let cs: Result<CipherString> = (&v_wrapper).into();
+        // let cs = cs?;
+        match cs {
+            Ok(v) => Ok(v),
+            Err(_) => Err(serde::de::Error::invalid_value(serde::de::Unexpected::Str(v), &self))
+        }
     }
 
     fn expecting(&self, formatter: &mut std::fmt::Formatter) -> std::fmt::Result {
@@ -117,8 +163,8 @@ pub struct SymmetricKey {
 }
 
 impl SymmetricKey {
-    pub fn encrypt(&self, data: &Vec<u8>) -> CipherString {
-        crypt::encrypt_cipher_string(self, data)
+    pub fn encrypt(&self, data: &Vec<u8>) -> Result<CipherString> {
+        Ok(crypt::encrypt_cipher_string(self, data)?)
     }
 }
 
@@ -160,41 +206,57 @@ impl From<Vec<u8>> for SymmetricKey {
     }
 }
 
-impl From<&MasterKey> for SymmetricKey {
-    fn from(input: &MasterKey) -> Self {
-        let (key, mac) = crypt::expand_key(&input.key);
-
-        Self { key, mac }
+impl From<&Vec<u8>> for SymmetricKey {
+    fn from(input: &Vec<u8>) -> Self {
+        input.into()
     }
 }
 
-pub trait Decrypt<T> {
-    fn decrypt(&self, key: T) -> BoxedResult<Vec<u8>>;
+impl From<MasterKey> for Result<SymmetricKey> {
+    fn from(input: MasterKey) -> Self {
+        let (key, mac) = crypt::expand_key(&input.key)?;
 
-    fn decrypt_string(&self, key: T) -> BoxedResult<String> {
+        Ok(SymmetricKey { key, mac })
+    }
+}
+
+impl From<&MasterKey> for Result<SymmetricKey> {
+    fn from(input: &MasterKey) -> Self {
+        let (key, mac) = crypt::expand_key(&input.key)?;
+
+        Ok(SymmetricKey { key, mac })
+    }
+}
+
+
+pub trait Decrypt<T> {
+    fn decrypt(&self, key: T) -> anyhow::Result<Vec<u8>>;
+
+    fn decrypt_string(&self, key: T) -> anyhow::Result<String> {
         Ok(String::from_utf8(self.decrypt(key)?)?)
     }
 }
 
 impl Decrypt<&MasterKey> for CipherString {
-    fn decrypt(&self, key: &MasterKey) -> BoxedResult<Vec<u8>> {
+    fn decrypt(&self, key: &MasterKey) -> anyhow::Result<Vec<u8>> {
+        let key: Result<SymmetricKey> = key.into();
         crypt::decrypt_cipher_string(
-            &SymmetricKey::from(key), self.clone())
+            &key?, self)
     }
 }
 
 impl Decrypt<&SymmetricKey> for CipherString {
-    fn decrypt(&self, key: &SymmetricKey) -> BoxedResult<Vec<u8>> {
+    fn decrypt(&self, key: &SymmetricKey) -> anyhow::Result<Vec<u8>> {
         crypt::decrypt_cipher_string(
-            key, self.clone())
+            key, self)
     }
 }
 
 impl Decrypt<&Vec<u8>> for CipherString {
-    fn decrypt(&self, key: &Vec<u8>) -> BoxedResult<Vec<u8>> {
-        let key = SymmetricKey::from(key.clone());
+    fn decrypt(&self, key: &Vec<u8>) -> anyhow::Result<Vec<u8>> {
+        let key = SymmetricKey::from(key);
 
         crypt::decrypt_cipher_string(
-            &key, self.clone())
+            &key, self)
     }
 }

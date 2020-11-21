@@ -1,11 +1,10 @@
 use std::env;
 
 use serde::{Deserialize, Serialize};
+use anyhow::{Context, Result};
 
 use security::models as sec_models;
 
-
-pub type BoxedResult<T> = std::result::Result<T, Box<dyn std::error::Error>>;
 
 #[derive(Deserialize, Debug)]
 pub struct PreLoginResponse {
@@ -155,12 +154,18 @@ pub struct Config {
 }
 
 impl Config {
-    pub fn load(reset_session: bool) -> Self {
-        Self {
+    pub fn load(reset_session: bool) -> Result<Self> {
+        Ok(Self {
             config_dir: {
-                let config_dir = env::var("NXCMDR_CONFIG_DIR")
-                .unwrap_or("/etc/nxcmdr".into());
-                std::fs::create_dir_all(config_dir.clone()).expect("Could not create config dir.");
+                let config_dir = match env::var("NXCMDR_CONFIG_DIR") {
+                    Ok(v) => v,
+                    Err(_) => format!("{}/.config/nxcmdr", env::var("HOME")
+                        .context("HOME environment variable is not set")?)
+                };
+
+                std::fs::create_dir_all(&config_dir)
+                    .context("Could not create config directory")?;
+
                 config_dir
             },
             session_key: {
@@ -189,6 +194,6 @@ impl Config {
             bw_user: env::var("NXCMDR_BW_USER").ok(),
             bw_pass: env::var("NXCMDR_BW_PASS").ok(),
             bw_tfa: env::var("NXCMDR_BW_TFA").ok()
-        }
+        })
     }
 }

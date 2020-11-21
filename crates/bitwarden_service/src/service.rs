@@ -1,19 +1,28 @@
 use reqwest;
 use chrono::{Utc, TimeZone};
+use anyhow::{Context, Result, anyhow, bail};
 
 use security::models as sec_models;
 
 use crate::{constants::*, models};
 
-
-pub fn get_full_sync(token: &models::TokenResponse) -> Result<models::SyncResponse, reqwest::Error> {
-    let rev_date = get_revision_date(token)?;
-
+fn make_get_request(url: &str, token: &models::TokenResponse) -> Result<reqwest::blocking::Response> {
     let client = reqwest::blocking::Client::new();
-    let mut res = client
-        .get(&crate::SYNC_URL!())
-        .bearer_auth(token.access_token.as_ref().unwrap())
-        .send()?
+    let access_token = match &token.access_token {
+        Some(v) => v,
+        None => bail!("Could not get access token from token response")
+    };
+
+    Ok(client
+        .get(url)
+        .bearer_auth(access_token)
+        .send()
+        .context(format!("Request failed: {}", url))?)
+}
+
+pub fn get_full_sync(token: &models::TokenResponse) -> Result<models::SyncResponse> {
+    let rev_date = get_revision_date(token)?;
+    let mut res = make_get_request(&crate::SYNC_URL!(), &token)?
         .json::<models::SyncResponse>()?;
 
     res.rev_date = Some(rev_date);
@@ -21,43 +30,37 @@ pub fn get_full_sync(token: &models::TokenResponse) -> Result<models::SyncRespon
     Ok(res)
 }
 
-pub fn get_revision_date(token: &models::TokenResponse) -> Result<chrono::DateTime<Utc>, reqwest::Error> {
-    let client = reqwest::blocking::Client::new();
-    let res = client
-        .get(&crate::REVISION_URL!())
-        .bearer_auth(token.access_token.as_ref().unwrap())
-        .send()?
+pub fn get_revision_date(token: &models::TokenResponse) -> Result<chrono::DateTime<Utc>> {
+    let res = make_get_request(&crate::REVISION_URL!(), token)?
         .json::<i64>()?;
 
     Ok(Utc.timestamp(res / 1000, 0))
 }
 
-pub fn get_iterations(email: &str) -> Result<u32, reqwest::Error> {
-    let client = reqwest::blocking::Client::new();
+pub fn get_iterations(email: &str) -> Result<u32> {
     let payload = models::IterationsRequest {
-        email: email.into()
+        email: email.to_string()
     };
 
+    let client = reqwest::blocking::Client::new();
     let res = client
         .post(&crate::PRELOGIN_URL!())
         .json(&payload)
         .send()?
         .json::<models::PreLoginResponse>()?;
 
-    match res.error.clone() {
-        // todo: bubble error upstream
-        Some(_) => panic!(format!("Error received: {:#?}", res)),
+    match &res.error {
+        Some(e) => bail!("Could not retrieve iterations: {}", e),
         _ => ()
     };
 
-    Ok(res.iterations.unwrap())
+    res.iterations.ok_or(anyhow!("Did not receive iterations for email: {}", email))
 }
 
 pub fn get_new_token(
-    email: &str,
-    master_key: &sec_models::MasterKey,
-    tfa_code: &str,
-) -> Result<models::TokenResponse, reqwest::Error> {
+    email: &str, master_key: &sec_models::MasterKey, tfa_code: &str,
+) -> Result<models::TokenResponse> {
+
     let client = reqwest::blocking::Client::new();
 
     let payload = models::TokenRequest {
@@ -70,7 +73,7 @@ pub fn get_new_token(
         // todo: fetch from config
         device_id: uuid::Uuid::parse_str("7d52408d-883d-4ed1-8dbb-fc6ff1a16c38").unwrap(),
         device_name: "firefox".into(),
-        two_factor_token: tfa_code.parse::<u32>().unwrap(),
+        two_factor_token: tfa_code.parse::<u32>().context("TFA code was not a number")?,
         two_factor_provider: 0,
         two_factor_remember: 0,
     };
@@ -82,25 +85,31 @@ pub fn get_new_token(
         .json::<models::TokenResponse>()?;
 
     res.last_saved = Some(chrono::offset::Local::now().to_string());
-    res.master_key = Some(base64::encode(master_key.key.clone()));
+    res.master_key = Some(base64::encode(&master_key.key));
 
-    match res.error.clone() {
-        // todo: bubble error upstream
-        Some(_) => panic!(format!("Error received: {:#?}", res)),
+    match &res.error_model {
+        Some(e) => bail!(
+            "Could not retrieve token: {}",
+            match &e.message {
+              Some(v) => v.clone(),
+              None => "Unknown error".to_string()
+            }),
         _ => ()
     };
 
     Ok(res)
 }
 
-pub fn refresh_token(
-    token: &mut models::TokenResponse,
-) -> Result<(), reqwest::Error> {
+pub fn refresh_token(token: &mut models::TokenResponse) -> Result<()> {
     let client = reqwest::blocking::Client::new();
+    let refresh_token = match &token.refresh_token {
+        Some(v) => v,
+        None => bail!("Could not retrieve refresh token from token response")
+    };
     let payload = models::RefreshTokenRequest {
-        grant_type: "refresh_token".into(),
-        client_id: "web".into(),
-        refresh_token: token.refresh_token.clone().unwrap().into(),
+        grant_type: "refresh_token".to_string(),
+        client_id: "web".to_string(),
+        refresh_token: refresh_token.into(),
     };
 
     let mut res = client
@@ -109,9 +118,13 @@ pub fn refresh_token(
         .send()?
         .json::<models::TokenResponse>()?;
 
-    match res.error.clone() {
-        // todo: bubble error upstream
-        Some(_) => panic!(format!("Error received: {:#?}", res)),
+    match &res.error_model {
+        Some(e) => bail!(
+            "Could not retrieve token: {}",
+            match &e.message {
+                Some(v) => v.clone(),
+                None => "Unknown error".to_string()
+              }),
         _ => ()
     };
 

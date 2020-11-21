@@ -1,9 +1,10 @@
 use std::{process::Command, collections::HashMap};
 
-use bitwarden_service::{get_by_name, auth::get_token};
 use clap::Clap;
+use anyhow::Result;
 
-mod models;
+use bitwarden_service::{get_by_name, auth::get_token};
+
 mod env;
 
 /// Execute a command with environment variables from .env files or
@@ -45,7 +46,12 @@ struct Opts {
     command: Vec<String>,
 }
 
-fn main() -> models::BoxedResult<()> {
+fn bw_get_by_name(name: &str, quiet: bool) -> Result<HashMap<String, String>> {
+    let token = get_token(quiet)?;
+    get_by_name(name, &token).map_err(|e|e.into())
+}
+
+fn main() {
     let opts = Opts::parse();
     let quiet = opts.quiet || opts.list;
 
@@ -59,8 +65,10 @@ fn main() -> models::BoxedResult<()> {
 
     let bw_envs = match opts.bitwarden_name {
         Some(v) => {
-            let token = get_token(quiet).unwrap();
-            get_by_name(&v, &token).unwrap()
+            bw_get_by_name(&v, quiet).unwrap_or_else(|error| {
+                println!("{:#}", error);
+                std::process::exit(2);
+            })
         },
         None => HashMap::new()
     };
@@ -93,12 +101,16 @@ fn main() -> models::BoxedResult<()> {
         }
     };
 
+    if !quiet {
+        println!("Loaded {} environment variables.", envs.len());
+    }
+
     if opts.list {
         for (env_key, env_val) in envs {
             println!("{}='{}'", env_key, env_val);
         }
 
-        return Ok(());
+        return
     }
 
     let output = Command::new(opts.shell)
@@ -116,5 +128,4 @@ fn main() -> models::BoxedResult<()> {
         }
         std::process::exit(1);
     }
-    Ok(())
 }

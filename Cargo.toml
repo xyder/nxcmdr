@@ -22,6 +22,7 @@ name = "nxc"
 
 [dependencies]
 dotenv-parser = "0.1.2"
+anyhow = "1.0.34"
 bitwarden_service = {version = "0.1.1", path = "crates/bitwarden_service"}
 
 [dependencies.clap]

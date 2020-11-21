@@ -1,10 +1,10 @@
 use std::{collections::{BTreeMap, HashMap}, path::Path};
 
-use crate::models;
+use anyhow::{Context, Result};
 
-
-pub fn get_env_vars(file_path: &str) -> models::BoxedResult<HashMap<String, String>> {
-    let contents = std::fs::read_to_string(Path::new(file_path))?;
+pub fn get_env_vars(file_path: &str) -> Result<HashMap<String, String>> {
+    let contents = std::fs::read_to_string(Path::new(file_path))
+        .context(format!("Could not read file: {}", file_path))?;
 
     let envs = dotenv_parser::parse_dotenv(&contents)
         .unwrap_or(BTreeMap::<String, String>::new());
