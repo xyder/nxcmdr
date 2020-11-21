@@ -3,7 +3,7 @@
 
 # external env vars: GITLAB_TOKEN, GITLAB_PROJECT_ID
 
-VERSION=0.2.3
+VERSION=0.2.4
 API_V4_URL=https://gitlab.com/api/v4
 
 echo "Uploading macosx build .."

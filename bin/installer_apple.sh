@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 
 
-# package id for v0.2.3
-pkg_id=4638918
+# package id for v0.2.4
+pkg_id=4812970
 
 curl https://gitlab.com/xyder/nxcmdr/-/package_files/$pkg_id/download --output /tmp/nxc.tar.gz
 

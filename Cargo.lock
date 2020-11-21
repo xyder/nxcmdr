@@ -74,7 +74,7 @@ checksum = "cf1de2fe8c75bc145a2f577add951f8134889b4795d47466a54a5c846d691693"
 
 [[package]]
 name = "bitwarden_service"
-version = "0.1.1"
+version = "0.1.2"
 dependencies = [
  "anyhow",
  "base64 0.13.0",
@@ -760,7 +760,7 @@ dependencies = [
 
 [[package]]
 name = "nxcmdr"
-version = "0.2.3"
+version = "0.2.4"
 dependencies = [
  "anyhow",
  "bitwarden_service",
@@ -1109,7 +1109,7 @@ dependencies = [
 
 [[package]]
 name = "security"
-version = "0.1.1"
+version = "0.1.2"
 dependencies = [
  "aes",
  "anyhow",

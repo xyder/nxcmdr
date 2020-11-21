@@ -1,6 +1,6 @@
 [package]
 name = "bitwarden_service"
-version = "0.1.1"
+version = "0.1.2"
 authors = ["xyder <xyder@dsider.org>"]
 edition = "2018"
 
@@ -13,4 +13,4 @@ uuid = {version = "0.8.1", features = ["serde", "v4"]}
 rpassword = "5.0"
 base64 = "0.13.0"
 anyhow = "1.0.34"
-security = {version = "0.1.1", path = "../security"}
+security = {version = "0.1.2", path = "../security"}

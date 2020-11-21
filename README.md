@@ -33,13 +33,13 @@ curl https://gitlab.com/xyder/nxcmdr/-/raw/master/bin/installer_apple.sh | bash
 ### Using the binaries
 Downloads page: [Project Packages](https://gitlab.com/xyder/nxcmdr/-/packages).
 
-Example for v0.2.3:
+Example for v0.2.4:
 ```
 # download the archive for your OS
-curl https://gitlab.com/xyder/nxcmdr/-/package_files/4638919/download --output nxc-0.2.3-x86_64-unknown-linux-gnu.tar.gz
+curl https://gitlab.com/xyder/nxcmdr/-/package_files/4812971/download --output nxc-0.2.4-x86_64-unknown-linux-gnu.tar.gz
 
 # unpack it
-tar -xf ./nxc-0.2.3-x86_64-unknown-linux-gnu.tar.gz
+tar -xf ./nxc-0.2.4-x86_64-unknown-linux-gnu.tar.gz
 
 # run the executable
 ./nxc -h
@@ -109,7 +109,7 @@ nxc -h
 Output of help:
 
 ```
-nxcmdr 0.2.3
+nxcmdr 0.2.4
 Xyder <xyder@dsider.org>
 Execute a command with environment variables from .env files or Bitwarden secure notes
 
