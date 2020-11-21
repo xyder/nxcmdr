@@ -18,10 +18,4 @@ curl --header "PRIVATE-TOKEN: $GITLAB_TOKEN" \
     --upload-file ./releases/$target_archive \
     $API_V4_URL/projects/$GITLAB_PROJECT_ID/packages/generic/nxcmdr/$VERSION/$target_archive > /dev/null
 
-echo "Uploading sources .."
-target_archive=sources.tar.gz
-curl --header "PRIVATE-TOKEN: $GITLAB_TOKEN" \
-    --upload-file ./releases/$target_archive \
-    $API_V4_URL/projects/$GITLAB_PROJECT_ID/packages/generic/nxcmdr/$VERSION/$target_archive > /dev/null
-
 echo "Done!"
