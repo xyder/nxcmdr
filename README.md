@@ -74,6 +74,18 @@ cargo install --path .
 
 ## Usage and examples
 
+> Note: When loading env vars from a file, use quotes if the values contain whitespace to avoid parsing errors.
+>
+> This does not work:
+>
+> `MY_ENV_VAR=the value`
+>
+> , but this does:
+>
+>`MY_ENV_VAR='the value'`
+
+<br>
+
 Run a command using collected variables:
 ```
 # running a python script using zsh, an .env file and two secure notes called "env.test_app.development" and

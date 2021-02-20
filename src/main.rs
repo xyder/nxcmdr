@@ -1,4 +1,4 @@
-use std::{process::Command, collections::HashMap};
+use std::{collections::HashMap, process::Command};
 
 use clap::Clap;
 use anyhow::Result;
@@ -63,22 +63,16 @@ fn main() {
 
     }
 
-    let bw_envs = match opts.bitwarden_name {
+    let bw_envs = match &opts.bitwarden_name {
         Some(v) => {
-            bw_get_by_name(&v, quiet).unwrap_or_else(|error| {
-                println!("{:#}", error);
+            bw_get_by_name(&v, quiet).unwrap_or_else(|err| {
+                // surface any bw error
+                eprintln!("{:#}", err);
                 std::process::exit(2);
             })
         },
         None => HashMap::new()
     };
-    let file_envs = env::get_env_vars(&opts.file);
-
-    if file_envs.is_err() {
-        if !quiet {
-            println!("No env file found.")
-        }
-    }
 
     if bw_envs.len() == 0 {
         if !quiet {
@@ -86,7 +80,27 @@ fn main() {
         }
     }
 
-    let file_envs = file_envs.unwrap_or(HashMap::new());
+    let file_envs = env::get_env_vars(&opts.file)
+        .unwrap_or_else(|err| {
+            match err.downcast_ref::<std::io::Error>() {
+                Some(e) => if (e.kind() == std::io::ErrorKind::NotFound) && (opts.file == "./.env") {
+                    // didn't find ./.env
+                    if !quiet {
+                        println!("No file envs loaded.")
+                    };
+                    HashMap::new()
+                } else {
+                    // surface io::Error
+                    eprintln!("{:#}", err);
+                    std::process::exit(2);
+                },
+                None => {
+                    // surface any other error
+                    eprintln!("{:#}", err);
+                    std::process::exit(2)
+                }
+            }
+        });
 
     let envs = if opts.cumulative {
         let mut res: HashMap<String, String> = HashMap::new();
