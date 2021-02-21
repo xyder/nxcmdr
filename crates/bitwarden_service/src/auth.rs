@@ -3,7 +3,7 @@ use std::path::Path;
 use anyhow::{Context, bail, Result};
 use security::models as sec_models;
 
-use crate::{constants, models::{self, Config}, service, store, utils::read_from_stdin};
+use crate::{constants, models::{self, Config}, service, store, utils::{read_from_stdin, process_conn_errors}};
 
 
 fn get_new_token(config: &Config) -> anyhow::Result<models::TokenResponse> {
@@ -47,7 +47,7 @@ fn need_refresh(token: &models::TokenResponse) -> Result<bool> {
     Ok(last_saved + duration <= chrono::offset::Local::now())
 }
 
-pub fn get_token(quiet: bool) -> anyhow::Result<models::TokenResponse> {
+pub fn get_token(ignore_conn_errors: bool, quiet: bool) -> anyhow::Result<models::TokenResponse> {
     let config = Config::load(false)?;
     let path = Path::new(&config.config_dir)
         .join(constants::TOKEN_FILENAME);
@@ -73,7 +73,9 @@ pub fn get_token(quiet: bool) -> anyhow::Result<models::TokenResponse> {
         if !quiet {
             println!("Token expired. Refreshing token ..");
         }
-        service::refresh_token(&mut data)?;
+
+        process_conn_errors(
+            service::refresh_token(&mut data), (), ignore_conn_errors, quiet)?;
 
         do_write = true;
     }

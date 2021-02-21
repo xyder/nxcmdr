@@ -22,8 +22,12 @@ struct Opts {
     cumulative: bool,
 
     /// If this is present, no output will be printed (except for when printing environment variables, if needed)
-    #[clap(short)]
+    #[clap(short, long)]
     quiet: bool,
+
+    /// If this is present, the local cache will be used on connection errors
+    #[clap(long)]
+    ignore_connection_errors: bool,
 
     /// If this is present, the environment variables will be printed to stdout and the command will not be executed
     #[clap(short, long)]
@@ -46,14 +50,15 @@ struct Opts {
     command: Vec<String>,
 }
 
-fn bw_get_by_name(name: &str, quiet: bool) -> Result<HashMap<String, String>> {
-    let token = get_token(quiet)?;
-    get_by_name(name, &token).map_err(|e|e.into())
+fn bw_get_by_name(name: &str, ignore_conn_errors: bool, quiet: bool) -> Result<HashMap<String, String>> {
+    let token = get_token(ignore_conn_errors, quiet)?;
+    get_by_name(name, &token, ignore_conn_errors, quiet).map_err(|e|e.into())
 }
 
 fn main() {
     let opts = Opts::parse();
     let quiet = opts.quiet || opts.list;
+    let ignore_conn_errors = opts.ignore_connection_errors;
 
     if !opts.list && opts.command.len() == 0 {
         if !quiet {
@@ -65,7 +70,7 @@ fn main() {
 
     let bw_envs = match &opts.bitwarden_name {
         Some(v) => {
-            bw_get_by_name(&v, quiet).unwrap_or_else(|err| {
+            bw_get_by_name(&v, ignore_conn_errors, quiet).unwrap_or_else(|err| {
                 // surface any bw error
                 eprintln!("{:#}", err);
                 std::process::exit(2);

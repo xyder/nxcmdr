@@ -131,14 +131,16 @@ ARGS:
     <command>...    the command to run
 
 FLAGS:
-    -c, --cumulative    If this is present all env sources will be merged, first loading Bitwarden,
-                        then the .env file
-    -h, --help          Prints help information
-    -l, --list          If this is present, the environment variables will be printed to stdout and
-                        the command will not be executed
-    -q                  If this is present, no output will be printed (except for when printing
-                        environment variables, if needed)
-    -V, --version       Prints version information
+    -c, --cumulative                  If this is present all env sources will be merged, first
+                                      loading Bitwarden, then the .env file
+    -h, --help                        Prints help information
+        --ignore-connection-errors    If this is present, the local cache will be used on connection
+                                      errors
+    -l, --list                        If this is present, the environment variables will be printed
+                                      to stdout and the command will not be executed
+    -q, --quiet                       If this is present, no output will be printed (except for when
+                                      printing environment variables, if needed)
+    -V, --version                     Prints version information
 
 OPTIONS:
     -b, --bitwarden-name <bitwarden-name>

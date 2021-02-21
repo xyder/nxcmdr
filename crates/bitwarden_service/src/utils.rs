@@ -38,3 +38,22 @@ pub fn read_from_stdin(initial: &Option<String>, message: &str, secure: bool) ->
 
     Ok(output.trim().to_string())
 }
+
+pub fn process_conn_errors<T>(result: Result<T>, default: T, ignore_conn_errors: bool, quiet: bool) -> Result<T> {
+    result.or_else(|err| {
+        match err.downcast_ref::<reqwest::Error>() {
+            Some(_) => {
+                // network connection issue
+                if !quiet {
+                    println!("Could not connect to BW server. Use `--ignore-connection-errors` to use cache instead.")
+                }
+                if ignore_conn_errors {
+                    Ok(default)
+                } else {
+                    Err(err)
+                }
+            },
+            None => Err(err)
+        }
+    })
+}

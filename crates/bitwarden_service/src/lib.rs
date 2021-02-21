@@ -14,7 +14,7 @@ mod store;
 use security::models::{Decrypt, self as sec_models};
 
 
-pub fn get_by_name(name: &str, token: &models::TokenResponse)
+pub fn get_by_name(name: &str, token: &models::TokenResponse, ignore_conn_errors: bool, quiet: bool)
         -> Result<HashMap<String, String>> {
 
     let key = match &token.master_key {
@@ -28,7 +28,7 @@ pub fn get_by_name(name: &str, token: &models::TokenResponse)
     let key: Result<sec_models::SymmetricKey> = master_key.into();
     let key = key?;
 
-    let data = sync::load_data(&token)?;
+    let data = sync::load_data(&token, ignore_conn_errors, quiet)?;
     let sym_key = sec_models::SymmetricKey::from(
         data.profile.key.decrypt(&key)?);
 
