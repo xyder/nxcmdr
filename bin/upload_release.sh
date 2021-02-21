@@ -10,12 +10,12 @@ echo "Uploading macosx build .."
 target_archive=nxc-$VERSION-x86_64-apple-darwin.tar.gz
 curl --header "PRIVATE-TOKEN: $GITLAB_TOKEN" \
     --upload-file ./releases/$target_archive \
-    $API_V4_URL/projects/$GITLAB_PROJECT_ID/packages/generic/nxcmdr/$VERSION/$target_archive > /dev/null
+    $API_V4_URL/projects/$GITLAB_PROJECT_ID/packages/generic/nxcmdr/$VERSION/$target_archive
 
 echo "Uploading linux build .."
 target_archive=nxc-$VERSION-x86_64-unknown-linux-gnu.tar.gz
 curl --header "PRIVATE-TOKEN: $GITLAB_TOKEN" \
     --upload-file ./releases/$target_archive \
-    $API_V4_URL/projects/$GITLAB_PROJECT_ID/packages/generic/nxcmdr/$VERSION/$target_archive > /dev/null
+    $API_V4_URL/projects/$GITLAB_PROJECT_ID/packages/generic/nxcmdr/$VERSION/$target_archive
 
 echo "Done!"
