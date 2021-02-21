@@ -3,7 +3,7 @@
 
 temp_release_dir=./releases/temp
 target=x86_64-apple-darwin
-target_archive=./releases/nxc-0.2.4-$target.tar.gz
+target_archive=./releases/nxc-0.2.5-$target.tar.gz
 
 # reset temp release directory
 rm -fr $temp_release_dir && mkdir -p $temp_release_dir
