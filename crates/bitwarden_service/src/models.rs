@@ -185,7 +185,7 @@ impl Config {
                         export NXCMDR_SESSION_KEY={}", session_key_str);
 
                     env::set_var("NXCMDR_SESSION_KEY", session_key_str);
-                    // using env vars as a global. I know, ugly.
+                    // todo: using env vars as a global. I know, ugly.
                     env::set_var("NXCMDR_SKIP_SESSION_GEN", "generated");
                 }
 

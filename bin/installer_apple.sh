@@ -1,14 +1,13 @@
 #!/usr/bin/env bash
 
-# package id for v0.2.5
-pkg_id=7364286
-
-curl https://gitlab.com/xyder/nxcmdr/-/package_files/$pkg_id/download --output /tmp/nxc.tar.gz
-
+VERSION='0.2.5'
 dest_dir=$HOME/.local/bin
+tmp_archive=/tmp/nxc.tar.gz
+
+curl -L "https://gitlab.com/xyder/nxcmdr/-/releases/$VERSION/downloads/bin/apple-macosx" --output $tmp_archive
 
 mkdir -p $dest_dir
 
-tar -xf /tmp/nxc.tar.gz -C $dest_dir ./nxc
+tar -xf $tmp_archive -C $dest_dir ./nxc
 
-rm /tmp/nxc.tar.gz
+rm tmp_archive

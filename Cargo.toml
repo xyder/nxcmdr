@@ -21,7 +21,7 @@ path = "src/main.rs"
 name = "nxc"
 
 [dependencies]
-dotenv-parser = "0.1.2"
+dotenv-parser = {version = "0.1.2", path = "crates/dotenv-parser"}
 anyhow = "1.0.34"
 bitwarden_service = {version = "0.1.2", path = "crates/bitwarden_service"}
 

@@ -283,8 +283,6 @@ dependencies = [
 [[package]]
 name = "dotenv-parser"
 version = "0.1.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "bcf9d7cd5e94b7216f7598628133bc183c4a402905cf1b2d39ea9ea30f1c7695"
 dependencies = [
  "pest",
  "pest_derive",
