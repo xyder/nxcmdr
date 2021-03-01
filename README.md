@@ -12,10 +12,10 @@ CLI utility to run applications using an env file or env variables fetched from 
 - [x] encrypted session cache
 - [x] docker build/run
 - [x] list variables to be saved in a file or exported
+- [x] Default to cached if Bitwarden server cannot be reached
 
 ### Planned
 - [ ] Cleanup, better error handling, better messages
-- [ ] Default to cached if Bitwarden server cannot be reached
 - [ ] Partial sync (if possible)
 - [ ] Command re-run on error or with filesystem watcher (if possible)
 
